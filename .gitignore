@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+# Backups exportados pelo app nunca devem ir para o repositório
+*backup*.json
+# Especificação e prints do app do banco (contêm dados pessoais)
+0_MODELOS/
+# Configuração local do Claude Code
+.claude/
