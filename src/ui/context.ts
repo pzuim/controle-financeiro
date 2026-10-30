@@ -19,6 +19,8 @@ export type SheetSpec =
   | { type: 'income'; incomeId?: string }
   | { type: 'history'; filter?: HistoryFilter }
   | { type: 'settings' }
+  | { type: 'cardView'; cardId: string }
+  | { type: 'account' }
   | { type: 'card'; cardId: string }
   | { type: 'rule' }
   | { type: 'categories' };
@@ -44,8 +46,6 @@ export interface UIContextValue {
   /** Mês compartilhado pelas telas Resumo e Categorias. */
   month: YearMonth;
   setMonth(month: YearMonth): void;
-  selectedCardId: string;
-  setSelectedCardId(id: string): void;
   /** Fatura escolhida em cada cartão ("AAAA-MM" do vencimento). Sem valor = fatura aberta. */
   invoiceByCard: Record<string, string>;
   setInvoiceFor(cardId: string, monthKey: string | null): void;

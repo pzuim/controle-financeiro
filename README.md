@@ -4,9 +4,12 @@ Aplicativo pessoal, simples e mobile-first para registrar despesas e rendas e en
 
 ## O que o app faz
 
-- **Cartões** (tela inicial): cartão grande deslizável ("Cartão 1" e "Cartão 2", com o final no alto), indicador de páginas, situação da fatura, vencimento e total. Permite navegar entre faturas anteriores e futuras. Embaixo, dois botões: **Despesa** e **Renda**.
-- **Despesa**: valor, descrição (com sugestões recentes), categoria e subcategoria, cartão ou Pix / débito, à vista ou parcelado (2 a 24x) e data. O cartão selecionado na tela inicial já vem marcado. Antes de salvar, o app mostra em qual fatura a compra vai entrar.
+- **Cartões** (tela inicial): cartões empilhados, como na Samsung Wallet. Ficam à mostra a faixa do **Cartão 1** e a do **Cartão 2** (com o final), e na frente o cartão **Conta**, com o saldo do mês.
+- **Cartão aberto**: o cartão com o total e o vencimento da fatura, setas para ver outras faturas, os lançamentos da fatura e um botão **+** com duas opções: **Despesa no cartão** e **Pix / transferência**.
+- **Conta aberta**: o saldo do mês e a sua composição (renda, faturas dos cartões e Pix), mais a lista de entradas e saídas. O **+** oferece **Renda** e **Pix / transferência**.
+- **Despesa**: valor, descrição (com sugestões recentes), categoria e subcategoria, cartão ou Pix / transferência, à vista ou parcelado (2 a 24x) e data. Antes de salvar, o app mostra em qual fatura a compra vai entrar.
 - **Renda**: valor, descrição, data de recebimento e tipo opcional (salário, extra ou outro). A renda é **da conta**: não pertence a nenhum cartão e vale para os dois.
+- **Pix / transferência**: dinheiro que sai direto da conta (Pix, transferência, débito). Não entra em fatura e conta no mês da data.
 - **Resumo mensal**: renda, despesas, saldo (positivo ou déficit) e total por cartão e Pix / débito.
 - **Categorias**: gráfico de barras horizontais do mês, do maior gasto para o menor, e detalhamento de cada categoria por cartão.
 - **Histórico**: busca (ignora acentos) e filtros por mês, cartão/Pix/rendas e categoria. Toque em um lançamento para editar ou excluir.
@@ -77,10 +80,14 @@ O Chrome só instala uma PWA (e ativa o modo offline) quando o site é servido p
 
 ### Opção A: pelo GitHub Pages (recomendado, uso definitivo)
 
-1. Publique conforme a seção abaixo.
-2. No celular, abra `https://<seu-usuario>.github.io/<repositorio>/` no Chrome.
-3. Toque no menu **⋮ → Instalar app** (ou **Adicionar à tela inicial**).
-4. Abra pelo ícone. Depois do primeiro acesso, o app funciona sem internet.
+1. No celular, abra https://pzuim.github.io/controle-financeiro/ no Chrome.
+2. Toque no menu **⋮ → Instalar e criar atalho → Instalar** (em outras versões: **Instalar app** ou **Adicionar à tela inicial**).
+3. O ícone laranja se chama **Controle Financeiro**. Se ele não aparecer na tela inicial, procure na gaveta de apps (deslize para cima) e segure o ícone para adicioná-lo.
+4. Depois do primeiro acesso, o app funciona sem internet.
+
+> A setinha de download do menu do Chrome **não instala** o app: ela só salva uma cópia da página para ler offline.
+>
+> Se o Chrome disser que o app "já está instalado" mas ele não abrir, vá em **Configurações do Android → Aplicativos**, desinstale o app antigo (as primeiras versões se chamavam **Finanças**) e instale de novo pelo Chrome.
 
 ### Opção B: teste local via cabo USB, antes de publicar
 
@@ -153,8 +160,9 @@ src/
     store.ts         Estado do app e ações (gravar, excluir, importar)
   ui/
     App.tsx          Navegação, painéis, diálogos, avisos e atualização do PWA
-    screens/         Cartões, Resumo mensal e Categorias
-    sheets/          Despesa, Renda, Histórico, Configurações, Fatura, Cartão e Categorias
+    screens/         Cartões (pilha), Resumo mensal e Categorias
+    sheets/          Cartão aberto, Conta, Despesa, Renda, Histórico, Configurações, Fatura e Categorias
+    rows.tsx         Linhas de lançamento usadas nas listas
     Onboarding.tsx   Configuração inicial
   styles.css         Visual (mobile-first)
 tests/             Testes (Vitest)

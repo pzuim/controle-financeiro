@@ -4,9 +4,9 @@ import { addMonths, sameYm, ymOf } from './dates';
 import { splitInstallments } from './installments';
 import type { AppData, Card, Category, Expense, ISODate, YearMonth } from './types';
 
-/** Chave usada para agrupar despesas pagas fora do cartão. */
+/** Chave usada para agrupar o dinheiro que sai direto da conta (Pix, transferência, débito). */
 export const PIX_KEY = 'pix';
-export const PIX_LABEL = 'Pix / débito';
+export const PIX_LABEL = 'Pix / transferência';
 
 export function methodKey(cardId: string | null): string {
   return cardId ?? PIX_KEY;

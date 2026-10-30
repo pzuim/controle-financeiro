@@ -9,12 +9,13 @@ import { UIContext } from './context';
 import type { DialogSpec, SheetSpec, Tab, UIContextValue } from './context';
 import { Icon } from './icons';
 import type { IconName } from './icons';
-import { sortedCards } from './labels';
 import { Onboarding } from './Onboarding';
 import { CardsScreen } from './screens/CardsScreen';
 import { CategoriesScreen } from './screens/CategoriesScreen';
 import { SummaryScreen } from './screens/SummaryScreen';
+import { AccountSheet } from './sheets/AccountSheet';
 import { CardEditSheet } from './sheets/CardEditSheet';
+import { CardSheet } from './sheets/CardSheet';
 import { CategoriesSheet } from './sheets/CategoriesSheet';
 import { ExpenseSheet } from './sheets/ExpenseSheet';
 import { HistorySheet } from './sheets/HistorySheet';
@@ -58,7 +59,6 @@ function Main({ data }: { data: AppData }) {
   const [tab, setTab] = useState<Tab>('cards');
   const [today, setToday] = useState(todayISO());
   const [month, setMonth] = useState(ymOf(today));
-  const [selectedCardId, setSelectedCardId] = useState(sortedCards(data.cards)[0]?.id ?? '');
   const [invoiceByCard, setInvoiceByCard] = useState<Record<string, string>>({});
   const [layers, setLayers] = useState<Layer[]>([]);
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
@@ -118,10 +118,6 @@ function Main({ data }: { data: AppData }) {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  // Mantém a seleção válida se um cartão deixar de existir (ex.: após importar um backup).
-  const cardIds = data.cards.map((c) => c.id);
-  const validSelected = cardIds.includes(selectedCardId) ? selectedCardId : (sortedCards(data.cards)[0]?.id ?? '');
-
   const ui: UIContextValue = {
     data,
     ledger,
@@ -133,8 +129,6 @@ function Main({ data }: { data: AppData }) {
     },
     month,
     setMonth,
-    selectedCardId: validSelected,
-    setSelectedCardId,
     invoiceByCard,
     setInvoiceFor(cardId, monthKey) {
       setInvoiceByCard((prev) => {
@@ -234,6 +228,10 @@ function SheetView({ spec }: { spec: SheetSpec }) {
       return <HistorySheet filter={spec.filter} />;
     case 'settings':
       return <SettingsSheet />;
+    case 'cardView':
+      return <CardSheet cardId={spec.cardId} />;
+    case 'account':
+      return <AccountSheet />;
     case 'card':
       return <CardEditSheet cardId={spec.cardId} />;
     case 'rule':

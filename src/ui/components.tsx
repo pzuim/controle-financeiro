@@ -2,11 +2,12 @@ import type { ComponentChildren, JSX } from 'preact';
 import { useEffect, useId, useRef, useState } from 'preact/hooks';
 import type { InvoiceStatus } from '../domain/billing';
 import { addMonths, sameYm, ymOf } from '../domain/dates';
-import { capitalize, formatBRL, formatDayMonthShort, monthName } from '../domain/format';
+import { capitalize, formatBRL, formatDayMonthShort, formatSignedBRL, monthName } from '../domain/format';
 import type { Card, ISODate, YearMonth } from '../domain/types';
 import { cardGradient, cardTextColor } from './colors';
 import type { DialogSpec } from './context';
 import { Icon } from './icons';
+import type { IconName } from './icons';
 import { STATUS_LABEL } from './labels';
 
 /* ---------- Painel secundário (abre de baixo para cima) ---------- */
@@ -16,28 +17,101 @@ interface SheetProps {
   onClose(): void;
   children: ComponentChildren;
   footer?: ComponentChildren;
+  /** "page": tela cheia com seta de voltar (cartão aberto); padrão: painel que sobe. */
+  variant?: 'sheet' | 'page';
+  /** Botão flutuante, posicionado sobre o conteúdo. */
+  fab?: ComponentChildren;
 }
 
-export function Sheet({ title, onClose, children, footer }: SheetProps) {
+export function Sheet({ title, onClose, children, footer, variant = 'sheet', fab }: SheetProps) {
   const ref = useRef<HTMLElement>(null);
   const titleId = useId();
   useEffect(() => {
     // Leva o foco para o painel (leitores de tela), a menos que um campo já tenha recebido foco.
     if (ref.current && !ref.current.contains(document.activeElement)) ref.current.focus();
   }, []);
+  const page = variant === 'page';
   return (
     <div class="sheet-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <section class="sheet" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} ref={ref}>
+      <section
+        class={page ? 'sheet page' : 'sheet'}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        ref={ref}
+      >
         <header class="sheet-header">
+          {page && (
+            <button type="button" class="icon-btn" aria-label="Voltar" onClick={onClose}>
+              <Icon name="chevronLeft" />
+            </button>
+          )}
           <h2 id={titleId}>{title}</h2>
-          <button type="button" class="icon-btn" aria-label="Fechar" onClick={onClose}>
-            <Icon name="close" />
-          </button>
+          {!page && (
+            <button type="button" class="icon-btn" aria-label="Fechar" onClick={onClose}>
+              <Icon name="close" />
+            </button>
+          )}
         </header>
         <div class="sheet-body">{children}</div>
         {footer && <footer class="sheet-footer">{footer}</footer>}
+        {fab}
       </section>
     </div>
+  );
+}
+
+/* ---------- Botão + com menu de opções ---------- */
+
+export interface FabAction {
+  label: string;
+  sub: string;
+  icon: IconName;
+  onSelect(): void;
+}
+
+export function FabMenu({ actions, color }: { actions: FabAction[]; color: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      {open && <div class="fab-backdrop" onClick={() => setOpen(false)} />}
+      <div class="fab-wrap">
+        {open && (
+          <div class="fab-actions" role="menu">
+            {actions.map((a) => (
+              <button
+                type="button"
+                role="menuitem"
+                class="fab-action"
+                onClick={() => {
+                  setOpen(false);
+                  a.onSelect();
+                }}
+              >
+                <span class="fab-action-icon">
+                  <Icon name={a.icon} size={20} />
+                </span>
+                <span>
+                  <strong>{a.label}</strong>
+                  <small>{a.sub}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+        <button
+          type="button"
+          class={open ? 'fab open' : 'fab'}
+          style={{ background: color }}
+          aria-label={open ? 'Fechar opções' : 'Adicionar lançamento'}
+          aria-expanded={open}
+          onClick={() => setOpen(!open)}
+        >
+          <Icon name="plus" size={28} strokeWidth={2.2} />
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -267,6 +341,34 @@ export function CardFace({ card, numberLabel, invoice }: CardFaceProps) {
             </span>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- Cartão da conta (renda e Pix / transferência) ---------- */
+
+export const ACCOUNT_COLOR = '#3A3D42';
+export const ACCOUNT_COLOR2 = '#16171A';
+
+export function AccountFace({ month, balanceCents }: { month: YearMonth; balanceCents: number }) {
+  return (
+    <div class="card-face" style={{ background: cardGradient(ACCOUNT_COLOR, ACCOUNT_COLOR2), color: '#fff' }}>
+      <div class="card-face-top">
+        <span class="card-number">Conta</span>
+        <Icon name="wallet" size={22} />
+      </div>
+      <div class="card-face-bottom">
+        <div class="card-meta">
+          <span>Saldo de {monthName(month.month)}</span>
+          {balanceCents !== 0 && (
+            <span class="status-pill on-card">
+              <Icon name={balanceCents > 0 ? 'check' : 'alert'} size={13} strokeWidth={2.4} />
+              {balanceCents > 0 ? 'Positivo' : 'Déficit'}
+            </span>
+          )}
+        </div>
+        <div class="card-total">{formatSignedBRL(balanceCents)}</div>
       </div>
     </div>
   );

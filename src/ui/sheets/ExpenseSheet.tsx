@@ -156,7 +156,7 @@ export function ExpenseSheet({ expenseId, cardId: initialCardId }: Props) {
       await saveExpense(expense);
       ui.close();
       if (existing) ui.toast('Alterações salvas.');
-      else if (cardId === null) ui.toast(`Despesa registrada em ${formatMonthYear(ymOf(date))}.`);
+      else if (cardId === null) ui.toast(`${PIX_LABEL} registrado em ${formatMonthYear(ymOf(date))}.`);
       else if (!firstDue) ui.toast('Compra salva. A fatura será definida quando você informar o fechamento do cartão.');
       else if (installments === 1) ui.toast(`Compra adicionada à fatura com vencimento em ${formatDayMonthShort(firstDue)}.`);
       else ui.toast(`Compra em ${installments}x adicionada. 1ª parcela na fatura com vencimento em ${formatDayMonthShort(firstDue)}.`);
@@ -210,7 +210,7 @@ export function ExpenseSheet({ expenseId, cardId: initialCardId }: Props) {
 
   return (
     <Sheet
-      title={existing ? 'Editar despesa' : 'Lançar despesa'}
+      title={cardId === null ? (existing ? `Editar ${PIX_LABEL}` : PIX_LABEL) : existing ? 'Editar despesa' : 'Lançar despesa'}
       onClose={ui.close}
       footer={
         <>
@@ -228,7 +228,7 @@ export function ExpenseSheet({ expenseId, cardId: initialCardId }: Props) {
       }
     >
       <div class="form-card">
-        <Field label="Valor total da compra" htmlFor="exp-amount">
+        <Field label={cardId === null ? 'Valor que sai da conta' : 'Valor total da compra'} htmlFor="exp-amount">
           <MoneyInput id="exp-amount" cents={amount} onChange={setAmount} autoFocus={!existing} large />
           {errors['amount'] && <div class="field-error">{errors['amount']}</div>}
         </Field>
@@ -396,7 +396,7 @@ export function ExpenseSheet({ expenseId, cardId: initialCardId }: Props) {
       </div>
 
       <div class="form-card">
-        <Field label="Data da compra" htmlFor="exp-date">
+        <Field label={cardId === null ? 'Data' : 'Data da compra'} htmlFor="exp-date">
           <div class="chips" style={{ marginBottom: '10px' }}>
             <button type="button" class="chip small" aria-pressed={date === ui.today} onClick={() => setDate(ui.today)}>
               Hoje

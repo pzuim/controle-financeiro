@@ -218,13 +218,6 @@ p {
   width: 100%;
 }
 
-.btn-primary {
-  background: var(--accent);
-  color: #fff;
-  min-height: 58px;
-  font-size: 1.0625rem;
-}
-
 .btn-dark {
   background: var(--text);
   color: #fff;
@@ -245,20 +238,6 @@ p {
   background: transparent;
   color: var(--negative);
   border-color: transparent;
-}
-
-.btn-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.btn-row .btn {
-  padding: 0 8px;
-  gap: 6px;
-  font-size: 0.9375rem;
-  white-space: nowrap;
 }
 
 .link-btn {
@@ -301,42 +280,149 @@ p {
   color: var(--text-3);
 }
 
-/* ---------- Carrossel de cartões ---------- */
+/* ---------- Carteira: cartões empilhados ---------- */
 
-.carousel {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  padding: 10px 7% 22px;
-  margin: 0 -16px;
-  -webkit-overflow-scrolling: touch;
+.wallet {
+  margin-top: clamp(8px, 5vh, 48px);
 }
 
-.carousel::-webkit-scrollbar {
-  display: none;
-}
-
-.carousel-slide {
-  flex: 0 0 86%;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
-  border: 0;
+.wallet-item {
+  display: block;
+  width: 100%;
   padding: 0;
+  border: 0;
   background: none;
   text-align: left;
   border-radius: 22px;
-  transition: transform 0.25s ease, opacity 0.25s ease;
+  position: relative;
+  transition: transform 0.15s ease;
 }
 
-.carousel-slide:not(.active) {
-  transform: scale(0.94);
-  opacity: 0.75;
+/* Cada cartão cobre o anterior, deixando à mostra só a faixa de cima (68px).
+   A porcentagem da margem é relativa à largura, então -100%/1,586 = altura do cartão. */
+.wallet-item + .wallet-item {
+  margin-top: calc(-100% / 1.586 + 68px);
 }
+
+.wallet-item:active {
+  transform: translateY(-4px);
+}
+
+.wallet-item .card-face {
+  box-shadow: 0 -6px 18px -8px rgba(0, 0, 0, 0.35), 0 16px 28px -14px rgba(20, 20, 20, 0.5);
+}
+
+.wallet-hint {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+/* ---------- Tela do cartão aberto ---------- */
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 14px 0 4px;
+}
+
+.period-nav .center {
+  text-align: center;
+}
+
+.account-stats li.total {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  font-weight: 700;
+}
+
+/* ---------- Botão + flutuante ---------- */
+
+.fab-wrap {
+  position: absolute;
+  right: 16px;
+  bottom: calc(20px + var(--safe-bottom));
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.fab {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.45);
+  transition: transform 0.2s ease;
+}
+
+.fab.open {
+  transform: rotate(45deg);
+}
+
+.fab-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: rgba(242, 243, 245, 0.85);
+  animation: fade-in 0.15s ease-out;
+}
+
+.fab-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  animation: pop-in 0.16s ease-out;
+}
+
+.fab-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 18px 8px 10px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  text-align: left;
+}
+
+.fab-action-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  flex: none;
+}
+
+.fab-action strong {
+  display: block;
+  font-weight: 650;
+}
+
+.fab-action small {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--text-2);
+}
+
+/* ---------- Face do cartão ---------- */
 
 .card-face {
   position: relative;
+  /* Cada cartão é uma camada própria: na pilha, o conteúdo de um não vaza sobre o outro. */
+  isolation: isolate;
   aspect-ratio: 1.586;
   border-radius: 22px;
   padding: 18px 20px;
@@ -400,33 +486,6 @@ p {
   margin-top: 2px;
 }
 
-.pager {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-top: -10px;
-}
-
-.dots {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 4px;
-  background: var(--border-strong);
-  transition: width 0.2s ease, background 0.2s ease;
-}
-
-.dot.active {
-  width: 22px;
-  background: var(--text);
-}
-
 /* ---------- Status ---------- */
 
 .status-pill {
@@ -473,17 +532,6 @@ p {
 
 /* ---------- Fatura ---------- */
 
-.invoice-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: -8px -12px 4px;
-}
-
-.invoice-nav .center {
-  text-align: center;
-}
-
 .eyebrow {
   font-size: 0.8125rem;
   color: var(--text-2);
@@ -492,55 +540,6 @@ p {
 .invoice-month {
   font-size: 1.0625rem;
   font-weight: 650;
-}
-
-.invoice-total {
-  font-size: 2.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-  text-align: center;
-  margin: 10px 0 8px;
-}
-
-.invoice-status {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 0.9375rem;
-}
-
-.facts {
-  margin: 16px 0 0;
-  padding: 12px 0 0;
-  border-top: 1px solid var(--border);
-  display: grid;
-  gap: 6px;
-  font-size: 0.9375rem;
-}
-
-.facts div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.facts dt {
-  color: var(--text-2);
-}
-
-.facts dd {
-  margin: 0;
-  font-weight: 600;
-  text-align: right;
-}
-
-.invoice-panel .row-link {
-  border-top: 1px solid var(--border);
-  margin-top: 12px;
-  padding-bottom: 0;
 }
 
 .hint-row {
@@ -561,27 +560,6 @@ p {
 
 .hint-row .grow {
   flex: 1;
-}
-
-.actions {
-  margin-top: 16px;
-}
-
-.main-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.btn-income {
-  background: var(--positive);
-}
-
-.actions-hint {
-  margin-top: 10px;
-  text-align: center;
-  font-size: 0.8125rem;
-  color: var(--text-2);
 }
 
 /* ---------- Resumo ---------- */
@@ -1038,6 +1016,25 @@ p {
   min-height: 60px;
 }
 
+.sheet {
+  position: relative;
+}
+
+/* Tela cheia com seta de voltar (cartão aberto, conta). */
+.sheet.page {
+  height: 100dvh;
+  border-radius: 0;
+  animation: slide-in 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.sheet.page .sheet-header {
+  padding: max(8px, env(safe-area-inset-top)) 16px 4px 4px;
+}
+
+.sheet.page .sheet-body {
+  padding-bottom: calc(110px + var(--safe-bottom));
+}
+
 .sheet-header h2 {
   flex: 1;
   font-size: 1.25rem;
@@ -1177,7 +1174,8 @@ select.input {
 }
 
 .segmented button {
-  flex: 1;
+  flex: 1 1 auto;
+  white-space: nowrap;
   min-height: 44px;
   border: 0;
   border-radius: 11px;
@@ -1782,6 +1780,13 @@ select.input {
   }
 }
 
+@keyframes slide-in {
+  from {
+    transform: translateX(28px);
+    opacity: 0;
+  }
+}
+
 @keyframes pop-in {
   from {
     transform: scale(0.96);
@@ -1806,7 +1811,8 @@ select.input {
 }
 
 @media (min-width: 520px) {
-  .sheet {
+  .sheet,
+  .sheet.page {
     height: calc(100dvh - 40px);
     margin-bottom: 20px;
     border-radius: 22px;

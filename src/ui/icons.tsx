@@ -11,6 +11,7 @@ const PATHS = {
   plus: 'M12 5v14M5 12h14',
   minus: 'M5 12h14',
   income: 'M4 17l6-6 4 4 6-6M14 9h6v6',
+  transfer: 'M7 17L17 7M9 7h8v8',
   chevronLeft: 'M14.5 6l-6 6 6 6',
   chevronRight: 'M9.5 6l6 6-6 6',
   chevronDown: 'M6 9.5l6 6 6-6',

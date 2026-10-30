@@ -22,7 +22,7 @@ export default defineConfig({
       manifest: {
         id: base,
         name: 'Controle Financeiro',
-        short_name: 'Finanças',
+        short_name: 'Controle Financeiro',
         description: 'Controle pessoal de despesas, faturas de cartão e rendas.',
         lang: 'pt-BR',
         dir: 'ltr',
