@@ -1,6 +1,6 @@
 import { useMemo } from 'preact/hooks';
-import { currentInvoiceMonth, ruleOf } from '../../domain/billing';
-import { addMonths, parseYmKey, sameYm, ymKey } from '../../domain/dates';
+import { currentInvoiceMonth, ruleOf, suggestedPurchaseDate } from '../../domain/billing';
+import { addMonths, parseYmKey, sameYm, suggestedDateInMonth, ymKey } from '../../domain/dates';
 import { formatBRL, formatDayMonth, formatDayMonthShort, formatMonthYear } from '../../domain/format';
 import { PIX_LABEL, invoiceFor } from '../../domain/ledger';
 import type { YearMonth } from '../../domain/types';
@@ -42,6 +42,10 @@ export function CardSheet({ cardId }: { cardId: string }) {
     : [];
   const accent = accessibleAccent(card.color2);
 
+  // Compra nova cai na fatura que está na tela. Pix novo: hoje na fatura aberta; em outra fatura, no mês dela.
+  const purchaseDate = month && rule ? suggestedPurchaseDate(month, rule, ui.today) : undefined;
+  const pixDate = month && openMonth && !sameYm(month, openMonth) ? suggestedDateInMonth(month, ui.today) : undefined;
+
   const select = (m: YearMonth) => ui.setInvoiceFor(card.id, openMonth && sameYm(m, openMonth) ? null : ymKey(m));
 
   const fab = (
@@ -52,13 +56,13 @@ export function CardSheet({ cardId }: { cardId: string }) {
           label: 'Despesa no cartão',
           sub: `Compra no ${label} · final ${card.last4}`,
           icon: 'card',
-          onSelect: () => ui.open({ type: 'expense', cardId: card.id }),
+          onSelect: () => ui.open({ type: 'expense', cardId: card.id, date: purchaseDate }),
         },
         {
           label: PIX_LABEL,
           sub: 'Dinheiro que sai da conta',
           icon: 'transfer',
-          onSelect: () => ui.open({ type: 'expense', cardId: null }),
+          onSelect: () => ui.open({ type: 'expense', cardId: null, date: pixDate }),
         },
       ]}
     />

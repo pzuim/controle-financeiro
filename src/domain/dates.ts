@@ -1,4 +1,4 @@
-import type { ISODate, YearMonth } from './types';
+import type { ISODate, Period, YearMonth } from './types';
 
 const ISO_DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -80,4 +80,16 @@ export function todayISO(now: Date = new Date()): ISODate {
 
 export function dateInYm(ym: YearMonth, day: number): ISODate {
   return toISODate(ym.year, ym.month, clampDay(ym, day));
+}
+
+/**
+ * Data sugerida para um lançamento feito olhando um mês: hoje, se for o mês de hoje;
+ * senão, o mesmo dia de hoje dentro do mês escolhido (ou o último dia, se o mês for mais curto).
+ */
+export function suggestedDateInMonth(ym: YearMonth, today: ISODate): ISODate {
+  return dateInYm(ym, parseISODate(today).day);
+}
+
+export function inPeriod(ym: YearMonth, period: Period): boolean {
+  return ym.year === period.year && (period.month === undefined || ym.month === period.month);
 }

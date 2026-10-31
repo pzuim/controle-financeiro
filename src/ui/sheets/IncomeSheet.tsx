@@ -11,13 +11,13 @@ import { normalize, recentDistinct } from '../text';
 
 const TYPES: IncomeType[] = ['salario', 'extra', 'outro'];
 
-export function IncomeSheet({ incomeId }: { incomeId?: string | undefined }) {
+export function IncomeSheet({ incomeId, date: initialDate }: { incomeId?: string | undefined; date?: string | undefined }) {
   const ui = useUI();
   const existing = incomeId ? ui.data.incomes.find((i) => i.id === incomeId) : undefined;
 
   const [amount, setAmount] = useState<number | null>(existing?.amountCents ?? null);
   const [description, setDescription] = useState(existing?.description ?? '');
-  const [date, setDate] = useState(existing?.date ?? ui.today);
+  const [date, setDate] = useState(existing?.date ?? initialDate ?? ui.today);
   const [type, setType] = useState<IncomeType | null>(existing?.type ?? null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);

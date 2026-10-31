@@ -1,38 +1,48 @@
 import { invoicePeriod, ruleOf } from '../../domain/billing';
-import { ymKey } from '../../domain/dates';
-import { formatBRL, formatDayMonth, formatMonthYear, formatSignedBRL } from '../../domain/format';
-import { monthSummary, PIX_LABEL } from '../../domain/ledger';
-import { ColorDot, MonthSelector, Notice } from '../components';
+import { capitalize, formatBRL, formatDayMonth, formatSignedBRL, monthName } from '../../domain/format';
+import { periodSummary, PIX_LABEL } from '../../domain/ledger';
+import { ColorDot, Notice, PeriodControls } from '../components';
 import { useUI } from '../context';
 import { Icon } from '../icons';
-import { cardNumberLabel, sortedCards } from '../labels';
+import { cardNumberLabel, periodView, sortedCards } from '../labels';
 
 export function SummaryScreen() {
   const ui = useUI();
   const cards = sortedCards(ui.data.cards);
-  const s = monthSummary(ui.month, ui.ledger, ui.data);
+  const view = periodView(ui.scope, ui.month);
+  const year = ui.month.year;
+  const s = periodSummary(view.period, ui.ledger, ui.data);
   const tone = s.balanceCents > 0 ? 'positive' : s.balanceCents < 0 ? 'negative' : 'zero';
   const pendingCards = cards.filter((c) => ui.ledger.pending.some((e) => e.cardId === c.id));
+  const months = view.yearly
+    ? Array.from({ length: 12 }, (_, i) => ({ month: i + 1, s: periodSummary({ year, month: i + 1 }, ui.ledger, ui.data) }))
+    : [];
+
+  const openMonth = (month: number) => {
+    ui.setMonth({ year, month });
+    ui.setScope('month');
+    window.scrollTo(0, 0);
+  };
 
   return (
     <div class="screen">
       <header class="screen-header">
-        <h1>Resumo mensal</h1>
+        <h1>Resumo</h1>
         <button
           type="button"
           class="icon-btn"
-          aria-label="Lançamentos do mês"
-          onClick={() => ui.open({ type: 'history', filter: { month: ymKey(ui.month) } })}
+          aria-label={`Lançamentos do ${view.unit}`}
+          onClick={() => ui.open({ type: 'history', filter: { month: view.historyKey } })}
         >
           <Icon name="history" />
         </button>
       </header>
 
-      <MonthSelector month={ui.month} today={ui.today} onChange={ui.setMonth} />
+      <PeriodControls scope={ui.scope} month={ui.month} today={ui.today} onScope={ui.setScope} onMonth={ui.setMonth} />
 
-      <section class={`balance ${tone}`} aria-label="Saldo do mês">
+      <section class={`balance ${tone}`} aria-label={`Saldo do ${view.unit}`}>
         <div class="balance-head">
-          <span class="balance-label">Saldo do mês</span>
+          <span class="balance-label">Saldo do {view.unit}</span>
           {tone === 'positive' && (
             <span class="balance-tag">
               <Icon name="check" size={14} strokeWidth={2.4} /> Positivo
@@ -45,7 +55,9 @@ export function SummaryScreen() {
           )}
         </div>
         <div class="balance-value num">{formatSignedBRL(s.balanceCents)}</div>
-        <div class="balance-caption">Renda menos despesas de {formatMonthYear(ui.month)}</div>
+        <div class="balance-caption">
+          Renda menos despesas de {view.yearly ? `janeiro a dezembro de ${year}` : view.label}
+        </div>
       </section>
 
       <div class="stat-grid">
@@ -63,6 +75,51 @@ export function SummaryScreen() {
         </div>
       </div>
 
+      {view.yearly && (
+        <>
+          <h2 class="section-title">Mês a mês</h2>
+          <section class="panel" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
+            <ul class="list">
+              {months.map(({ month, s: m }) => {
+                const empty = m.incomeCents === 0 && m.expenseCents === 0;
+                const mTone = m.balanceCents > 0 ? 'positive' : m.balanceCents < 0 ? 'negative' : '';
+                return (
+                  <li key={month}>
+                    <button
+                      type="button"
+                      class={empty ? 'method-row empty-month' : 'method-row'}
+                      onClick={() => openMonth(month)}
+                    >
+                      <span class="grow">
+                        <span class="method-name">{capitalize(monthName(month))}</span>
+                        {empty ? (
+                          <span class="method-sub" style={{ display: 'block' }}>
+                            Sem lançamentos
+                          </span>
+                        ) : (
+                          <>
+                            <span class="method-sub" style={{ display: 'block' }}>
+                              Renda {formatBRL(m.incomeCents)}
+                            </span>
+                            <span class="method-sub" style={{ display: 'block' }}>
+                              Despesas {formatBRL(m.expenseCents)}
+                            </span>
+                          </>
+                        )}
+                      </span>
+                      <span class={`method-value num month-row-value ${mTone}`}>
+                        {empty ? '—' : formatSignedBRL(m.balanceCents)}
+                      </span>
+                      <Icon name="chevronRight" size={18} />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </>
+      )}
+
       <h2 class="section-title">Gastos por cartão</h2>
       <section class="panel" style={{ paddingTop: '6px', paddingBottom: '6px' }}>
         <ul class="list">
@@ -71,7 +128,9 @@ export function SummaryScreen() {
             const rule = card ? ruleOf(card) : null;
             const sub = card
               ? rule
-                ? `Fatura que vence em ${formatDayMonth(invoicePeriod(ui.month, rule).dueDate)}`
+                ? view.yearly
+                  ? `Faturas que vencem em ${year}`
+                  : `Fatura que vence em ${formatDayMonth(invoicePeriod(ui.month, rule).dueDate)}`
                 : 'Fechamento não definido'
               : 'Pela data do pagamento';
             return (
@@ -79,7 +138,7 @@ export function SummaryScreen() {
                 <button
                   type="button"
                   class="method-row"
-                  onClick={() => ui.open({ type: 'history', filter: { month: ymKey(ui.month), method: m.key } })}
+                  onClick={() => ui.open({ type: 'history', filter: { month: view.historyKey, method: m.key } })}
                 >
                   {card ? (
                     <ColorDot color={card.color} color2={card.color2} />
@@ -116,7 +175,7 @@ export function SummaryScreen() {
 
       <p class="empty-note" style={{ marginTop: '14px' }}>
         Compras no cartão contam no mês de vencimento da fatura; parcelas, no mês de cada fatura. {PIX_LABEL} e
-        rendas contam no mês da data.
+        rendas contam no mês da data.{view.yearly && ' O ano soma os doze meses com as mesmas regras.'}
       </p>
     </div>
   );

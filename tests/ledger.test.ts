@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ymKey } from '../src/domain/dates';
 import { defaultCards, defaultCategories } from '../src/domain/defaults';
-import { buildLedger, categoryBreakdown, invoiceFor, monthSummary, PIX_KEY } from '../src/domain/ledger';
+import { buildLedger, categoryBreakdown, invoiceFor, periodSummary, PIX_KEY } from '../src/domain/ledger';
 import type { Card, Expense, Income } from '../src/domain/types';
 
 let seq = 0;
@@ -129,7 +129,7 @@ describe('resumo mensal', () => {
   const ledger = buildLedger({ cards, expenses });
 
   it('soma renda, despesas por fatura e calcula o saldo', () => {
-    const s = monthSummary(JAN_2027, ledger, { cards, incomes });
+    const s = periodSummary(JAN_2027, ledger, { cards, incomes });
     expect(s.incomeCents).toBe(850000);
     expect(s.expenseCents).toBe(20000 + 15000 + 4590 + 150000);
     expect(s.balanceCents).toBe(850000 - 189590);
@@ -141,7 +141,7 @@ describe('resumo mensal', () => {
   });
 
   it('a parcela com o centavo de ajuste aparece no mês da última fatura', () => {
-    const s = monthSummary({ year: 2027, month: 2 }, ledger, { cards, incomes });
+    const s = periodSummary({ year: 2027, month: 2 }, ledger, { cards, incomes });
     expect(s.expenseCents).toBe(15001);
     expect(s.incomeCents).toBe(0);
     expect(s.balanceCents).toBe(-15001);
@@ -159,7 +159,7 @@ describe('resumo mensal', () => {
     // Todas as categorias visíveis aparecem, mesmo sem gastos.
     expect(rows).toHaveLength(10);
     const total = rows.reduce((s, r) => s + r.totalCents, 0);
-    expect(total).toBe(monthSummary(JAN_2027, ledger, { cards, incomes }).expenseCents);
+    expect(total).toBe(periodSummary(JAN_2027, ledger, { cards, incomes }).expenseCents);
   });
 
   it('categoria oculta só aparece se tiver gasto no mês', () => {
@@ -182,5 +182,53 @@ describe('resumo mensal', () => {
       ['Netflix', 5590],
       [null, 1990],
     ]);
+  });
+});
+
+describe('resumo anual', () => {
+  const cards = defaultCards();
+  const expenses = [
+    // Fecha 24/12/2025 e vence 02/01/2026: conta em 2026, no mês do pagamento.
+    expense({ amountCents: 300000, date: '2025-12-24', categoryId: 'cat-outros' }),
+    // Vence 02/06/2026.
+    expense({ amountCents: 250000, date: '2026-05-24', categoryId: 'cat-outros' }),
+    // Compra de 25/12/2026 vence só em 02/02/2027: fica fora de 2026.
+    expense({ amountCents: 7000, date: '2026-12-25', categoryId: 'cat-alimentacao' }),
+    // 4x a partir da fatura de 02/12/2026: uma parcela em 2026 e três em 2027.
+    expense({ amountCents: 40000, date: '2026-10-30', installments: 4, categoryId: 'cat-compras' }),
+    // Pix conta pela data.
+    expense({ cardId: null, amountCents: 12000, date: '2026-03-10', categoryId: 'cat-alimentacao' }),
+  ];
+  const incomes = [income(500000, '2026-01-05'), income(500000, '2026-06-05'), income(500000, '2027-01-05')];
+  const ledger = buildLedger({ cards, expenses });
+  const year = periodSummary({ year: 2026 }, ledger, { cards, incomes });
+
+  it('soma só o que cai no ano, pelas mesmas regras do resumo mensal', () => {
+    expect(year.incomeCents).toBe(1000000);
+    expect(year.expenseCents).toBe(300000 + 250000 + 10000 + 12000);
+    expect(year.balanceCents).toBe(1000000 - 572000);
+    expect(year.byMethod).toEqual([
+      { key: 'card-1', cardId: 'card-1', totalCents: 560000 },
+      { key: 'card-2', cardId: 'card-2', totalCents: 0 },
+      { key: PIX_KEY, cardId: null, totalCents: 12000 },
+    ]);
+  });
+
+  it('é igual à soma dos doze meses', () => {
+    const months = Array.from({ length: 12 }, (_, i) => periodSummary({ year: 2026, month: i + 1 }, ledger, { cards, incomes }));
+    expect(months.reduce((s, m) => s + m.incomeCents, 0)).toBe(year.incomeCents);
+    expect(months.reduce((s, m) => s + m.expenseCents, 0)).toBe(year.expenseCents);
+    expect(months[0]!.balanceCents).toBe(500000 - 300000);
+    expect(months[5]!.balanceCents).toBe(500000 - 250000);
+  });
+
+  it('agrupa as categorias do ano inteiro', () => {
+    const rows = categoryBreakdown({ year: 2026 }, ledger, defaultCategories());
+    expect(rows.slice(0, 3).map((r) => [r.category.name, r.totalCents])).toEqual([
+      ['Outros', 550000],
+      ['Alimentação', 12000],
+      ['Compras', 10000],
+    ]);
+    expect(rows.reduce((s, r) => s + r.totalCents, 0)).toBe(year.expenseCents);
   });
 });

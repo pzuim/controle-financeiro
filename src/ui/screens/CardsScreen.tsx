@@ -1,6 +1,6 @@
 import { currentInvoiceMonth, ruleOf } from '../../domain/billing';
 import { ymOf } from '../../domain/dates';
-import { PIX_LABEL, invoiceFor, monthSummary } from '../../domain/ledger';
+import { PIX_LABEL, invoiceFor, periodSummary } from '../../domain/ledger';
 import { AccountFace, CardFace } from '../components';
 import { useUI } from '../context';
 import { Icon } from '../icons';
@@ -11,7 +11,7 @@ export function CardsScreen() {
   const ui = useUI();
   const cards = sortedCards(ui.data.cards);
   const thisMonth = ymOf(ui.today);
-  const balance = monthSummary(thisMonth, ui.ledger, ui.data).balanceCents;
+  const balance = periodSummary(thisMonth, ui.ledger, ui.data).balanceCents;
 
   return (
     <div class="screen">

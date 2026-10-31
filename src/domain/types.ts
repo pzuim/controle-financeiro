@@ -7,6 +7,12 @@ export interface YearMonth {
   month: number;
 }
 
+/** Período dos resumos: um mês específico ou, sem `month`, o ano inteiro. */
+export interface Period {
+  year: number;
+  month?: number | undefined;
+}
+
 /**
  * Cartão de crédito da conta. O app o identifica como "Cartão 1", "Cartão 2"…
  * pela ordem. Os cartões da conta usam a mesma regra de fechamento e

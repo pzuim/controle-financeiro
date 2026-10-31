@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'preact/hooks';
-import { parseYmKey, sameYm, ymKey, ymOf } from '../../domain/dates';
+import { inPeriod, parseYmKey, ymKey, ymOf } from '../../domain/dates';
 import { capitalize, formatBRL, formatMonthYear } from '../../domain/format';
 import { PIX_KEY, PIX_LABEL } from '../../domain/ledger';
 import type { LedgerEntry } from '../../domain/ledger';
-import type { Expense, Income, ISODate } from '../../domain/types';
+import type { Expense, Income, ISODate, Period } from '../../domain/types';
 import { Sheet } from '../components';
 import type { HistoryFilter } from '../context';
 import { useUI } from '../context';
@@ -27,6 +27,14 @@ type Item =
 
 const PAGE = 120;
 
+const YEAR_KEY = /^\d{4}$/;
+
+/** Filtro de período: "AAAA" (ano inteiro), "AAAA-MM" (mês) ou "all" (`null`). */
+function periodOf(key: string): Period | null {
+  if (key === 'all') return null;
+  return YEAR_KEY.test(key) ? { year: Number(key) } : parseYmKey(key);
+}
+
 export function HistorySheet({ filter }: { filter?: HistoryFilter | undefined }) {
   const ui = useUI();
   const cards = sortedCards(ui.data.cards);
@@ -46,23 +54,26 @@ export function HistorySheet({ filter }: { filter?: HistoryFilter | undefined })
   }, [ui.ledger]);
 
   const monthOptions = useMemo(() => {
-    const keys = new Set<string>([ymKey(ui.month), ymKey(ymOf(ui.today)), month === 'all' ? ymKey(ui.month) : month]);
+    const keys = new Set<string>([ymKey(ui.month), ymKey(ymOf(ui.today))]);
+    if (month !== 'all' && !YEAR_KEY.test(month)) keys.add(month);
     for (const e of ui.ledger.entries) keys.add(ymKey(e.month));
     for (const e of ui.ledger.pending) keys.add(ymKey(ymOf(e.date)));
     for (const i of ui.data.incomes) keys.add(ymKey(ymOf(i.date)));
     return [...keys].sort().reverse();
   }, [ui.ledger, ui.data.incomes]);
 
+  const yearOptions = [...new Set(monthOptions.map((k) => k.slice(0, 4)))];
+
   const items = useMemo((): Item[] => {
     const list: Item[] = [];
     const wantsExpenses = method !== 'income';
     const wantsIncomes = (method === 'all' || method === 'income') && categoryId === 'all';
-    const ym = month === 'all' ? null : parseYmKey(month);
+    const period = periodOf(month);
 
     if (wantsExpenses) {
-      if (ym) {
+      if (period) {
         for (const entry of ui.ledger.entries) {
-          if (!sameYm(entry.month, ym)) continue;
+          if (!inPeriod(entry.month, period)) continue;
           list.push({
             kind: 'expense',
             key: `${entry.expense.id}#${entry.installment}`,
@@ -74,7 +85,7 @@ export function HistorySheet({ filter }: { filter?: HistoryFilter | undefined })
           });
         }
         for (const e of ui.ledger.pending) {
-          if (sameYm(ymOf(e.date), ym)) {
+          if (inPeriod(ymOf(e.date), period)) {
             list.push({ kind: 'expense', key: e.id, expense: e, entry: null, firstEntry: null, amountCents: e.amountCents, date: e.date });
           }
         }
@@ -94,7 +105,7 @@ export function HistorySheet({ filter }: { filter?: HistoryFilter | undefined })
     }
     if (wantsIncomes) {
       for (const i of ui.data.incomes) {
-        if (ym && !sameYm(ymOf(i.date), ym)) continue;
+        if (period && !inPeriod(ymOf(i.date), period)) continue;
         list.push({ kind: 'income', key: i.id, income: i, amountCents: i.amountCents, date: i.date });
       }
     }
@@ -147,9 +158,16 @@ export function HistorySheet({ filter }: { filter?: HistoryFilter | undefined })
       <div class="filters">
         <select class="input full" aria-label="Mês" value={month} onChange={(e) => setMonth(e.currentTarget.value)}>
           <option value="all">Todos os meses</option>
-          {monthOptions.map((k) => (
-            <option value={k}>{capitalize(formatMonthYear(parseYmKey(k)))}</option>
-          ))}
+          <optgroup label="Ano inteiro">
+            {yearOptions.map((y) => (
+              <option value={y}>Ano de {y}</option>
+            ))}
+          </optgroup>
+          <optgroup label="Mês">
+            {monthOptions.map((k) => (
+              <option value={k}>{capitalize(formatMonthYear(parseYmKey(k)))}</option>
+            ))}
+          </optgroup>
         </select>
         <select class="input" aria-label="Cartão" value={method} onChange={(e) => setMethod(e.currentTarget.value)}>
           <option value="all">Todos</option>

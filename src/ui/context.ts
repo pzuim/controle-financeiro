@@ -6,8 +6,11 @@ import type { AppData, ISODate, YearMonth } from '../domain/types';
 
 export type Tab = 'cards' | 'summary' | 'categories';
 
+/** Resumo e Categorias mostram o ano inteiro (padrão) ou um mês. */
+export type SummaryScope = 'year' | 'month';
+
 export interface HistoryFilter {
-  /** "AAAA-MM" ou "all". */
+  /** "AAAA-MM" (mês), "AAAA" (ano inteiro) ou "all". */
   month?: string;
   /** id do cartão, "pix", "income" ou "all". */
   method?: string;
@@ -15,8 +18,9 @@ export interface HistoryFilter {
 }
 
 export type SheetSpec =
-  | { type: 'expense'; expenseId?: string; cardId?: string | null }
-  | { type: 'income'; incomeId?: string }
+  /** `date`: data sugerida para um lançamento novo (padrão: hoje). */
+  | { type: 'expense'; expenseId?: string; cardId?: string | null; date?: ISODate }
+  | { type: 'income'; incomeId?: string; date?: ISODate }
   | { type: 'history'; filter?: HistoryFilter }
   | { type: 'settings' }
   | { type: 'cardView'; cardId: string }
@@ -43,9 +47,11 @@ export interface UIContextValue {
   today: ISODate;
   tab: Tab;
   goTo(tab: Tab): void;
-  /** Mês compartilhado pelas telas Resumo e Categorias. */
+  /** Mês compartilhado pelas telas Resumo e Categorias; no modo ano, vale o `year`. */
   month: YearMonth;
   setMonth(month: YearMonth): void;
+  scope: SummaryScope;
+  setScope(scope: SummaryScope): void;
   /** Fatura escolhida em cada cartão ("AAAA-MM" do vencimento). Sem valor = fatura aberta. */
   invoiceByCard: Record<string, string>;
   setInvoiceFor(cardId: string, monthKey: string | null): void;

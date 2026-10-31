@@ -6,7 +6,7 @@ import type { AppData } from '../domain/types';
 import { initStore, useAppState } from '../data/store';
 import { Dialog } from './components';
 import { UIContext } from './context';
-import type { DialogSpec, SheetSpec, Tab, UIContextValue } from './context';
+import type { DialogSpec, SheetSpec, SummaryScope, Tab, UIContextValue } from './context';
 import { Icon } from './icons';
 import type { IconName } from './icons';
 import { Onboarding } from './Onboarding';
@@ -59,6 +59,7 @@ function Main({ data }: { data: AppData }) {
   const [tab, setTab] = useState<Tab>('cards');
   const [today, setToday] = useState(todayISO());
   const [month, setMonth] = useState(ymOf(today));
+  const [scope, setScope] = useState<SummaryScope>('year');
   const [invoiceByCard, setInvoiceByCard] = useState<Record<string, string>>({});
   const [layers, setLayers] = useState<Layer[]>([]);
   const [toast, setToast] = useState<{ id: number; message: string } | null>(null);
@@ -124,11 +125,18 @@ function Main({ data }: { data: AppData }) {
     today,
     tab,
     goTo(next) {
+      // Vindo da tela de cartões, Resumo e Categorias sempre abrem no ano atual.
+      if (tab === 'cards' && next !== 'cards') {
+        setScope('year');
+        setMonth(ymOf(today));
+      }
       setTab(next);
       window.scrollTo(0, 0);
     },
     month,
     setMonth,
+    scope,
+    setScope,
     invoiceByCard,
     setInvoiceFor(cardId, monthKey) {
       setInvoiceByCard((prev) => {
@@ -221,9 +229,9 @@ function Main({ data }: { data: AppData }) {
 function SheetView({ spec }: { spec: SheetSpec }) {
   switch (spec.type) {
     case 'expense':
-      return <ExpenseSheet expenseId={spec.expenseId} cardId={spec.cardId} />;
+      return <ExpenseSheet expenseId={spec.expenseId} cardId={spec.cardId} date={spec.date} />;
     case 'income':
-      return <IncomeSheet incomeId={spec.incomeId} />;
+      return <IncomeSheet incomeId={spec.incomeId} date={spec.date} />;
     case 'history':
       return <HistorySheet filter={spec.filter} />;
     case 'settings':

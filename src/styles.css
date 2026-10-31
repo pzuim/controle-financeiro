@@ -1818,3 +1818,23 @@ select.input {
     border-radius: 22px;
   }
 }
+
+/* ---------- Período (ano ou mês) e resumo mês a mês ---------- */
+
+.period-controls {
+  display: grid;
+  gap: 10px;
+}
+
+.month-row-value.positive {
+  color: var(--positive);
+}
+
+.month-row-value.negative {
+  color: var(--negative);
+}
+
+.method-row.empty-month .method-name,
+.method-row.empty-month .month-row-value {
+  color: var(--text-3);
+}

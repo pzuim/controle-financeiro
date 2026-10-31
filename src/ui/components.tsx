@@ -5,7 +5,7 @@ import { addMonths, sameYm, ymOf } from '../domain/dates';
 import { capitalize, formatBRL, formatDayMonthShort, formatSignedBRL, monthName } from '../domain/format';
 import type { Card, ISODate, YearMonth } from '../domain/types';
 import { cardGradient, cardTextColor } from './colors';
-import type { DialogSpec } from './context';
+import type { DialogSpec, SummaryScope } from './context';
 import { Icon } from './icons';
 import type { IconName } from './icons';
 import { STATUS_LABEL } from './labels';
@@ -192,6 +192,68 @@ export function MonthSelector({ month, today, onChange }: MonthSelectorProps) {
       <button type="button" class="icon-btn" aria-label="Próximo mês" onClick={() => onChange(addMonths(month, 1))}>
         <Icon name="chevronRight" />
       </button>
+    </div>
+  );
+}
+
+/* ---------- Seletor de ano ---------- */
+
+interface YearSelectorProps {
+  year: number;
+  today: ISODate;
+  onChange(year: number): void;
+}
+
+export function YearSelector({ year, today, onChange }: YearSelectorProps) {
+  const current = ymOf(today).year;
+  return (
+    <div class="month-selector">
+      <button type="button" class="icon-btn" aria-label="Ano anterior" onClick={() => onChange(year - 1)}>
+        <Icon name="chevronLeft" />
+      </button>
+      <div class="month-label" aria-live="polite">
+        <span class="month-name">{year}</span>
+        {year !== current && (
+          <button type="button" class="link-btn small" onClick={() => onChange(current)}>
+            Ir para o ano atual
+          </button>
+        )}
+      </div>
+      <button type="button" class="icon-btn" aria-label="Próximo ano" onClick={() => onChange(year + 1)}>
+        <Icon name="chevronRight" />
+      </button>
+    </div>
+  );
+}
+
+/* ---------- Período do Resumo e das Categorias: ano ou mês ---------- */
+
+interface PeriodControlsProps {
+  scope: SummaryScope;
+  /** Mês escolhido; no modo ano, vale só o `year`. */
+  month: YearMonth;
+  today: ISODate;
+  onScope(scope: SummaryScope): void;
+  onMonth(month: YearMonth): void;
+}
+
+export function PeriodControls({ scope, month, today, onScope, onMonth }: PeriodControlsProps) {
+  return (
+    <div class="period-controls">
+      <Segmented
+        label="Período"
+        value={scope}
+        options={[
+          { value: 'year', label: 'Ano' },
+          { value: 'month', label: 'Mês' },
+        ]}
+        onChange={onScope}
+      />
+      {scope === 'year' ? (
+        <YearSelector year={month.year} today={today} onChange={(year) => onMonth({ year, month: month.month })} />
+      ) : (
+        <MonthSelector month={month} today={today} onChange={onMonth} />
+      )}
     </div>
   );
 }

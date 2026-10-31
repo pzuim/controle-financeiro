@@ -82,6 +82,16 @@ export function currentInvoiceMonth(rule: BillingRule, today: ISODate): YearMont
   return invoiceMonthFor(today, rule);
 }
 
+/**
+ * Data sugerida para uma compra lançada olhando uma fatura: hoje, se uma compra de hoje
+ * entra nela; senão, o dia do fechamento, que sempre cai na própria fatura.
+ */
+export function suggestedPurchaseDate(dueMonth: YearMonth, rule: BillingRule, today: ISODate): ISODate {
+  const todayInvoice = invoiceMonthFor(today, rule);
+  if (todayInvoice.year === dueMonth.year && todayInvoice.month === dueMonth.month) return today;
+  return invoicePeriod(dueMonth, rule).closingDate;
+}
+
 /** Converte um cartão em regra de faturamento, ou `null` se o fechamento ainda não foi configurado. */
 export function ruleOf(card: { dueDay: number; closingDay: number | null }): BillingRule | null {
   if (!isValidDay(card.dueDay) || !isValidDay(card.closingDay)) return null;

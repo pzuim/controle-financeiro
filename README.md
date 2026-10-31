@@ -10,8 +10,9 @@ Aplicativo pessoal, simples e mobile-first para registrar despesas e rendas e en
 - **Despesa**: valor, descrição (com sugestões recentes), categoria e subcategoria, cartão ou Pix / transferência, à vista ou parcelado (2 a 24x) e data. Antes de salvar, o app mostra em qual fatura a compra vai entrar.
 - **Renda**: valor, descrição, data de recebimento e tipo opcional (salário, extra ou outro). A renda é **da conta**: não pertence a nenhum cartão e vale para os dois.
 - **Pix / transferência**: dinheiro que sai direto da conta (Pix, transferência, débito). Não entra em fatura e conta no mês da data.
-- **Resumo mensal**: renda, despesas, saldo (positivo ou déficit) e total por cartão e Pix / débito.
-- **Categorias**: gráfico de barras horizontais do mês, do maior gasto para o menor, e detalhamento de cada categoria por cartão.
+- **Resumo**: abre sempre no **ano atual**, com renda, despesas e saldo do ano (positivo ou déficit), o saldo **mês a mês** e o total por cartão e Pix / transferência. Em **Mês** (ou tocando num mês da lista), mostra só aquele mês.
+- **Categorias**: gráfico de barras horizontais do ano (ou do mês escolhido em **Mês**), do maior gasto para o menor, e detalhamento de cada categoria por cartão e por subcategoria.
+- **Data sugerida**: ao lançar olhando outro mês ou outra fatura, a data já vem nele. Na Conta, o mesmo dia de hoje no mês que está na tela. No cartão, o dia do fechamento da fatura que está na tela, para a compra cair nela. Na fatura aberta e no mês atual, vem a data de hoje.
 - **Histórico**: busca (ignora acentos) e filtros por mês, cartão/Pix/rendas e categoria. Toque em um lançamento para editar ou excluir.
 - **Configurações**: fechamento e vencimento (únicos para os dois cartões); final e cores de cada cartão; categorias e subcategorias (adicionar, renomear, ocultar); exportação e importação de backup JSON.
 
@@ -25,7 +26,7 @@ Aplicativo pessoal, simples e mobile-first para registrar despesas e rendas e en
 | Meses mais curtos | Fechamento ou vencimento em dia inexistente (ex.: 31 em abril) usa o último dia do mês. |
 | Parcelas | O valor total é dividido igualmente e os centavos que sobram vão para a última parcela (R$ 100,00 em 3x = 33,33 + 33,33 + 33,34). A 1ª parcela segue a regra de fechamento e as demais vão para as faturas seguintes. A compra continua sendo uma só no histórico. |
 | Renda | É da conta, não de um cartão. Entra no Resumo do mês em que foi recebida. |
-| Mês de referência no Resumo e em Categorias | Cartão: mês de **vencimento** da fatura (cada parcela no mês da sua fatura). Pix / débito e rendas: mês da data. Saldo do mês = renda − (faturas dos dois cartões + Pix / débito). |
+| Mês de referência no Resumo e em Categorias | Cartão: mês de **vencimento** da fatura (cada parcela no mês da sua fatura). Pix / transferência e rendas: mês da data. Saldo do mês = renda − (faturas dos dois cartões + Pix / transferência). O ano é a soma dos seus doze meses, com as mesmas regras. |
 | Mudança de fechamento | A fatura de cada lançamento é sempre calculada a partir da regra atual. Ao mudar o fechamento ou o vencimento, todos os lançamentos, inclusive os antigos, são reatribuídos automaticamente. |
 
 Toda essa lógica fica em `src/domain/` (funções puras, sem interface) e é coberta pelos testes em `tests/`.
@@ -54,7 +55,7 @@ Abra http://localhost:5173. No Chrome, use as ferramentas de desenvolvedor (F12)
 npm test
 ```
 
-Os testes cobrem a regra de fechamento (fecha 24, vence 2, nos dois cartões), a atribuição de fatura, meses de 28 a 31 dias, anos bissextos, a virada de ano, o parcelamento com ajuste de centavos, o resumo mensal, as categorias e a validação de backup.
+Os testes cobrem a regra de fechamento (fecha 24, vence 2, nos dois cartões), a atribuição de fatura, meses de 28 a 31 dias, anos bissextos, a virada de ano, o parcelamento com ajuste de centavos, o resumo mensal e anual, as categorias, a data sugerida ao lançar e a validação de backup.
 
 ```bash
 npm run typecheck
@@ -87,7 +88,11 @@ O Chrome só instala uma PWA (e ativa o modo offline) quando o site é servido p
 
 > A setinha de download do menu do Chrome **não instala** o app: ela só salva uma cópia da página para ler offline.
 >
-> Se o Chrome disser que o app "já está instalado" mas ele não abrir, vá em **Configurações do Android → Aplicativos**, desinstale o app antigo (as primeiras versões se chamavam **Finanças**) e instale de novo pelo Chrome.
+> **"Esse app já está instalado", mas ele não existe e não abre:** é um bug do Chrome para Android nas versões **154 a 156**. Nessas versões, se outro app do mesmo site (`pzuim.github.io`, como o Meu Setup ou o Reembolso) já estiver instalado, o Chrome acha que este também está e não instala. A correção vem no **Chrome 157** ([bug 568841400](https://issues.chromium.org/issues/568841400)). Veja a versão em **Chrome → ⋮ → Configurações → Sobre o Chrome**, atualize pela Play Store e instale de novo.
+>
+> Não desinstale os outros apps para contornar: ao desinstalar, o Chrome oferece apagar os dados do site, e isso apagaria os dados dos três apps, que ficam no mesmo endereço.
+>
+> **Criar atalho** não instala o app: o ícone fica com o selo do Chrome e abre numa aba do navegador. Os dados são os mesmos do app instalado.
 
 ### Opção B: teste local via cabo USB, antes de publicar
 
@@ -160,7 +165,7 @@ src/
     store.ts         Estado do app e ações (gravar, excluir, importar)
   ui/
     App.tsx          Navegação, painéis, diálogos, avisos e atualização do PWA
-    screens/         Cartões (pilha), Resumo mensal e Categorias
+    screens/         Cartões (pilha), Resumo (ano ou mês) e Categorias
     sheets/          Cartão aberto, Conta, Despesa, Renda, Histórico, Configurações, Fatura e Categorias
     rows.tsx         Linhas de lançamento usadas nas listas
     Onboarding.tsx   Configuração inicial

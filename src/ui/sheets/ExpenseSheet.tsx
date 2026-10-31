@@ -16,18 +16,20 @@ import { normalize, recentDistinct } from '../text';
 interface Props {
   expenseId?: string | undefined;
   cardId?: string | null | undefined;
+  /** Data sugerida para uma despesa nova. */
+  date?: string | undefined;
 }
 
 const PIX = '__pix__';
 
-export function ExpenseSheet({ expenseId, cardId: initialCardId }: Props) {
+export function ExpenseSheet({ expenseId, cardId: initialCardId, date: initialDate }: Props) {
   const ui = useUI();
   const cards = sortedCards(ui.data.cards);
   const existing = expenseId ? ui.data.expenses.find((e) => e.id === expenseId) : undefined;
 
   const [amount, setAmount] = useState<number | null>(existing?.amountCents ?? null);
   const [description, setDescription] = useState(existing?.description ?? '');
-  const [date, setDate] = useState(existing?.date ?? ui.today);
+  const [date, setDate] = useState(existing?.date ?? initialDate ?? ui.today);
   const [method, setMethod] = useState<string>(
     existing ? (existing.cardId ?? PIX) : initialCardId === null ? PIX : (initialCardId ?? cards[0]?.id ?? PIX),
   );
@@ -308,7 +310,7 @@ export function ExpenseSheet({ expenseId, cardId: initialCardId }: Props) {
       <div class="form-card">
         <Field label="Pagamento">
           <Segmented
-            label="Cartão ou Pix / débito"
+            label={`Cartão ou ${PIX_LABEL}`}
             value={method}
             onChange={setMethod}
             options={[

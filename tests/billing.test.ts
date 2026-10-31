@@ -7,9 +7,10 @@ import {
   invoicePeriod,
   invoiceStatus,
   ruleOf,
+  suggestedPurchaseDate,
 } from '../src/domain/billing';
 import type { BillingRule } from '../src/domain/billing';
-import { addDays, ymKey } from '../src/domain/dates';
+import { addDays, suggestedDateInMonth, ymKey } from '../src/domain/dates';
 
 /** Cartão 6722: fecha dia 24, vence dia 2 (regra confirmada). */
 const CARD_6722: BillingRule = { closingDay: 24, dueDay: 2 };
@@ -160,5 +161,32 @@ describe('ruleOf', () => {
   it('não cria regra para cartão sem fechamento configurado', () => {
     expect(ruleOf({ dueDay: 5, closingDay: null })).toBeNull();
     expect(ruleOf({ dueDay: 5, closingDay: 28 })).toEqual({ dueDay: 5, closingDay: 28 });
+  });
+});
+
+describe('data sugerida ao lançar olhando um mês ou uma fatura', () => {
+  it('compra: hoje, se hoje cai na fatura que está na tela', () => {
+    expect(suggestedPurchaseDate({ year: 2026, month: 12 }, CARD_6722, '2026-10-31')).toBe('2026-10-31');
+  });
+
+  it('compra em fatura passada ou futura: o dia do fechamento dela', () => {
+    expect(suggestedPurchaseDate({ year: 2026, month: 6 }, CARD_6722, '2026-10-31')).toBe('2026-05-24');
+    expect(suggestedPurchaseDate({ year: 2026, month: 1 }, CARD_6722, '2026-10-31')).toBe('2025-12-24');
+    expect(suggestedPurchaseDate({ year: 2027, month: 2 }, CARD_6722, '2026-10-31')).toBe('2027-01-24');
+  });
+
+  it('a data sugerida sempre entra na própria fatura', () => {
+    for (let m = 1; m <= 24; m++) {
+      const due = { year: 2026 + Math.floor((m - 1) / 12), month: ((m - 1) % 12) + 1 };
+      const date = suggestedPurchaseDate(due, CARD_6722, '2026-10-31');
+      expect(ymKey(invoiceMonthFor(date, CARD_6722))).toBe(ymKey(due));
+    }
+  });
+
+  it('renda ou Pix: hoje no mês atual; em outro mês, o mesmo dia (ou o último dia do mês)', () => {
+    expect(suggestedDateInMonth({ year: 2026, month: 10 }, '2026-10-31')).toBe('2026-10-31');
+    expect(suggestedDateInMonth({ year: 2026, month: 5 }, '2026-10-31')).toBe('2026-05-31');
+    expect(suggestedDateInMonth({ year: 2026, month: 4 }, '2026-10-31')).toBe('2026-04-30');
+    expect(suggestedDateInMonth({ year: 2028, month: 2 }, '2026-10-31')).toBe('2028-02-29');
   });
 });

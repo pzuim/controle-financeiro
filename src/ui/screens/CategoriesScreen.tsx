@@ -1,11 +1,10 @@
-import { ymKey } from '../../domain/dates';
-import { formatBRL, formatMonthYear } from '../../domain/format';
+import { formatBRL } from '../../domain/format';
 import { categoryBreakdown, PIX_KEY, PIX_LABEL } from '../../domain/ledger';
 import type { CategoryTotal } from '../../domain/ledger';
-import { ColorDot, MonthSelector } from '../components';
+import { ColorDot, PeriodControls } from '../components';
 import { useUI } from '../context';
 import { Icon } from '../icons';
-import { cardNumberLabel, sortedCards } from '../labels';
+import { cardNumberLabel, periodView, sortedCards } from '../labels';
 
 const compact = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
 
@@ -33,7 +32,8 @@ function percent(part: number, total: number): string {
 export function CategoriesScreen() {
   const ui = useUI();
   const cards = sortedCards(ui.data.cards);
-  const rows = categoryBreakdown(ui.month, ui.ledger, ui.data.categories);
+  const view = periodView(ui.scope, ui.month);
+  const rows = categoryBreakdown(view.period, ui.ledger, ui.data.categories);
   const total = rows.reduce((s, r) => s + r.totalCents, 0);
   const max = Math.max(0, ...rows.map((r) => r.totalCents));
   const ticks = max > 0 ? niceTicks(max) : [];
@@ -50,18 +50,18 @@ export function CategoriesScreen() {
         <h1>Categorias</h1>
       </header>
 
-      <MonthSelector month={ui.month} today={ui.today} onChange={ui.setMonth} />
+      <PeriodControls scope={ui.scope} month={ui.month} today={ui.today} onScope={ui.setScope} onMonth={ui.setMonth} />
 
-      <section class="panel" style={{ marginTop: '12px' }} aria-label={`Gastos por categoria em ${formatMonthYear(ui.month)}`}>
+      <section class="panel" style={{ marginTop: '12px' }} aria-label={`Gastos por categoria em ${view.label}`}>
         <div class="chart-total">
-          <span class="muted">Total gasto no mês</span>
+          <span class="muted">Total gasto no {view.unit}</span>
           <strong class="num">{formatBRL(total)}</strong>
         </div>
 
         {max === 0 ? (
           <div class="empty">
             <Icon name="bars" size={32} />
-            Nenhum gasto em {formatMonthYear(ui.month)}.
+            Nenhum gasto em {view.label}.
           </div>
         ) : (
           <div class="bar-chart">
@@ -70,7 +70,7 @@ export function CategoriesScreen() {
                 type="button"
                 class={row.totalCents === 0 ? 'bar-row zero' : 'bar-row'}
                 disabled={row.totalCents === 0}
-                aria-label={`${row.category.name}: ${formatBRL(row.totalCents)}, ${percent(row.totalCents, total)} do mês`}
+                aria-label={`${row.category.name}: ${formatBRL(row.totalCents)}, ${percent(row.totalCents, total)} do ${view.unit}`}
                 onClick={() => scrollToDetail(row)}
               >
                 <span class="bar-head">
@@ -102,7 +102,7 @@ export function CategoriesScreen() {
             class="row-link"
             style={{ padding: 0, minHeight: '44px' }}
             onClick={() =>
-              ui.open({ type: 'history', filter: { month: ymKey(ui.month), categoryId: row.category.id } })
+              ui.open({ type: 'history', filter: { month: view.historyKey, categoryId: row.category.id } })
             }
           >
             <span class="cat-icon">
@@ -112,7 +112,9 @@ export function CategoriesScreen() {
               <span class="cat-detail-name" style={{ display: 'block' }}>
                 {row.category.name}
               </span>
-              <span class="method-sub">{percent(row.totalCents, total)} do mês</span>
+              <span class="method-sub">
+                {percent(row.totalCents, total)} do {view.unit}
+              </span>
             </span>
             <span class="cat-detail-total num">{formatBRL(row.totalCents)}</span>
             <Icon name="chevronRight" size={18} />
@@ -152,7 +154,7 @@ export function CategoriesScreen() {
 
       {withSpending.length > 0 && withoutSpending.length > 0 && (
         <p class="empty-note" style={{ marginTop: '12px' }}>
-          Sem gastos no mês: {withoutSpending.map((r) => r.category.name).join(', ')}.
+          Sem gastos no {view.unit}: {withoutSpending.map((r) => r.category.name).join(', ')}.
         </p>
       )}
     </div>

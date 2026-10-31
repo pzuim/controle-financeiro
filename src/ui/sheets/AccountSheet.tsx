@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
-import { sameYm, ymOf } from '../../domain/dates';
+import { sameYm, suggestedDateInMonth, ymOf } from '../../domain/dates';
 import { formatSignedBRL } from '../../domain/format';
-import { PIX_LABEL, entriesInMonth, monthSummary } from '../../domain/ledger';
+import { PIX_LABEL, entriesInMonth, periodSummary } from '../../domain/ledger';
 import type { LedgerEntry } from '../../domain/ledger';
 import type { Income } from '../../domain/types';
 import { ACCOUNT_COLOR2, AccountFace, FabMenu, MonthSelector, Sheet } from '../components';
@@ -21,9 +21,11 @@ export function AccountSheet() {
   const catById = useMemo(() => new Map(ui.data.categories.map((c) => [c.id, c])), [ui.data.categories]);
   const [month, setMonth] = useState(ymOf(ui.today));
 
-  const s = monthSummary(month, ui.ledger, ui.data);
+  const s = periodSummary(month, ui.ledger, ui.data);
   const cardsTotal = s.byMethod.filter((m) => m.cardId !== null).reduce((sum, m) => sum + m.totalCents, 0);
   const pixTotal = s.byMethod.find((m) => m.cardId === null)?.totalCents ?? 0;
+  // Lançamentos novos já vêm com a data no mês que está na tela.
+  const newDate = suggestedDateInMonth(month, ui.today);
 
   const items: Item[] = [
     ...ui.data.incomes
@@ -42,13 +44,13 @@ export function AccountSheet() {
           label: 'Renda',
           sub: 'Entrada na conta, vale para os dois cartões',
           icon: 'income',
-          onSelect: () => ui.open({ type: 'income' }),
+          onSelect: () => ui.open({ type: 'income', date: newDate }),
         },
         {
           label: PIX_LABEL,
           sub: 'Dinheiro que sai da conta',
           icon: 'transfer',
-          onSelect: () => ui.open({ type: 'expense', cardId: null }),
+          onSelect: () => ui.open({ type: 'expense', cardId: null, date: newDate }),
         },
       ]}
     />

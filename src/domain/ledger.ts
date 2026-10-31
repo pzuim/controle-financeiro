@@ -1,8 +1,8 @@
 import { invoiceMonthFor, invoicePeriod, invoiceStatus, ruleOf } from './billing';
 import type { InvoicePeriod, InvoiceStatus } from './billing';
-import { addMonths, sameYm, ymOf } from './dates';
+import { addMonths, inPeriod, sameYm, ymOf } from './dates';
 import { splitInstallments } from './installments';
-import type { AppData, Card, Category, Expense, ISODate, YearMonth } from './types';
+import type { AppData, Card, Category, Expense, ISODate, Period, YearMonth } from './types';
 
 /** Chave usada para agrupar o dinheiro que sai direto da conta (Pix, transferência, débito). */
 export const PIX_KEY = 'pix';
@@ -75,6 +75,10 @@ export function entriesInMonth(ledger: Ledger, month: YearMonth): LedgerEntry[] 
   return ledger.entries.filter((e) => sameYm(e.month, month));
 }
 
+export function entriesInPeriod(ledger: Ledger, period: Period): LedgerEntry[] {
+  return ledger.entries.filter((e) => inPeriod(e.month, period));
+}
+
 function sum(values: Iterable<number>): number {
   let total = 0;
   for (const v of values) total += v;
@@ -87,21 +91,25 @@ export interface MethodTotal {
   totalCents: number;
 }
 
-export interface MonthSummary {
-  month: YearMonth;
+export interface PeriodSummary {
+  period: Period;
   incomeCents: number;
   expenseCents: number;
   balanceCents: number;
-  /** Um item por cartão (na ordem configurada) e um para Pix / débito. */
+  /** Um item por cartão (na ordem configurada) e um para Pix / transferência. */
   byMethod: MethodTotal[];
 }
 
-export function monthSummary(
-  month: YearMonth,
+/**
+ * Renda, despesas e saldo de um mês ou de um ano inteiro. O ano é a soma dos seus
+ * meses, com as mesmas regras: cartão no mês de vencimento da fatura, Pix e renda pela data.
+ */
+export function periodSummary(
+  period: Period,
   ledger: Ledger,
   data: Pick<AppData, 'cards' | 'incomes'>,
-): MonthSummary {
-  const entries = entriesInMonth(ledger, month);
+): PeriodSummary {
+  const entries = entriesInPeriod(ledger, period);
   const totals = new Map<string, number>();
   for (const e of entries) {
     const key = methodKey(e.expense.cardId);
@@ -112,9 +120,9 @@ export function monthSummary(
     ...cards.map((c) => ({ key: c.id, cardId: c.id, totalCents: totals.get(c.id) ?? 0 })),
     { key: PIX_KEY, cardId: null, totalCents: totals.get(PIX_KEY) ?? 0 },
   ];
-  const incomeCents = sum(data.incomes.filter((i) => sameYm(ymOf(i.date), month)).map((i) => i.amountCents));
+  const incomeCents = sum(data.incomes.filter((i) => inPeriod(ymOf(i.date), period)).map((i) => i.amountCents));
   const expenseCents = sum(entries.map((e) => e.amountCents));
-  return { month, incomeCents, expenseCents, balanceCents: incomeCents - expenseCents, byMethod };
+  return { period, incomeCents, expenseCents, balanceCents: incomeCents - expenseCents, byMethod };
 }
 
 export interface SubcategoryTotal {
@@ -132,10 +140,10 @@ export interface CategoryTotal {
 }
 
 /**
- * Gastos do mês por categoria principal, do maior para o menor.
- * Categorias ocultas só aparecem se tiverem gastos no mês.
+ * Gastos do mês (ou do ano) por categoria principal, do maior para o menor.
+ * Categorias ocultas só aparecem se tiverem gastos no período.
  */
-export function categoryBreakdown(month: YearMonth, ledger: Ledger, categories: Category[]): CategoryTotal[] {
+export function categoryBreakdown(period: Period, ledger: Ledger, categories: Category[]): CategoryTotal[] {
   const byId = new Map(categories.map((c) => [c.id, c]));
   const rows = new Map<string, CategoryTotal>();
   const subTotals = new Map<string, Map<string, number>>();
@@ -147,7 +155,7 @@ export function categoryBreakdown(month: YearMonth, ledger: Ledger, categories: 
     }
   }
 
-  for (const e of entriesInMonth(ledger, month)) {
+  for (const e of entriesInPeriod(ledger, period)) {
     const row = rows.get(e.expense.categoryId);
     if (!row) continue;
     row.totalCents += e.amountCents;
